@@ -1,4 +1,4 @@
-// Winda.cpp : Defines the entry point for the console application.
+﻿// Winda.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
