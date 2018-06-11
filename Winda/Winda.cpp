@@ -241,6 +241,19 @@ int main(int argc, char **argv) {
 		buttons[i]->Draw();
 	}
 
+
+	SDL_Rect *floorLine = new SDL_Rect;
+	floorLine->x = 0;
+	floorLine->y = 0;
+	floorLine->w = SCREEN_WIDTH / 2;
+	floorLine->h = 2;
+
+	for (int i = 2; i < 6; i++)		//rysowanie pięter
+	{
+		floorLine->y = 120 * i - floorLine->h / 2;
+		SDL_FillRect(screen, floorLine, black);
+	}
+
 	SDL_Rect *srcrect = new SDL_Rect;	//Obszar za winda do zamalowanie na bialo
 
 	srcrect->x = SCREEN_WIDTH / 2 - mainLift->lifts->w / 2;
@@ -248,11 +261,6 @@ int main(int argc, char **argv) {
 	srcrect->w = mainLift->lifts->w;
 	srcrect->h = SCREEN_HEIGHT;
 
-	SDL_Rect *floorLine = new SDL_Rect;
-	floorLine->x = 0;
-	floorLine->y = 0;
-	floorLine->w = SCREEN_WIDTH / 2;
-	floorLine->h = 2;
 
 	SDL_Rect *textRect = new SDL_Rect;
 	textRect->x = 4;
@@ -269,11 +277,7 @@ int main(int argc, char **argv) {
 		delta = (tick2 - tick1) * 0.001;
 		tick1 = tick2;
 
-		for (int i = 2; i < 6; i++)		//rysowanie pięter
-		{
-			floorLine->y = 120 * i - floorLine->h/2;
-			SDL_FillRect(screen, floorLine, black);
-		}
+
 
 		SDL_FillRect(screen, srcrect, white); //Obszar za winda do zamalowanie na bialo
 
