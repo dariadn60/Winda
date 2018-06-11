@@ -9,7 +9,6 @@
 #include"./sdl-2.0.7/include/SDL.h"
 #include"./sdl-2.0.7/include/SDL_main.h"
 
-
 #define SCREEN_WIDTH	1280
 #define SCREEN_HEIGHT	720
 
@@ -81,10 +80,12 @@ public:
 	}
 };
 
-
 class lift
 {
 public:
+
+	bool isMoving;
+
 	float y, x;	//jej pozycja w xy;
 	SDL_Surface *lifts;
 	lift(int _y, SDL_Surface *_l)
@@ -102,20 +103,19 @@ public:
 		pxY = SCREEN_HEIGHT - 120 * pxY;
 		int dir;
 
-		if (y < pxY)	//bardzo niedopracowane TYLKO TEST - TAK NIE BEDZIE
+		if (y < pxY)
 			dir = 1;
 		else
 			dir = -1;
 
-
-		if (abs(y - pxY) > 1)		//bardzo niedopracowane TYLKO TEST - TAK NIE BEDZIE
+		if (abs(y - pxY) > 0.01)
 		{
-			y += 150 * dt *dir;
+			y += 400 * dt *dir;
 		}
 	}
 };
 
-int numClicked = 0;  //który przycisk zostal nacisniety
+int floorClick = 0;  //który przycisk zostal nacisniety
 
 
 int main(int argc, char **argv) {
@@ -230,6 +230,7 @@ int main(int argc, char **argv) {
 	std::deque <int> kolejka;		//kolejkowanie pieter - na razie nic nie robi
 
 	lift *mainLift = new lift(SCREEN_HEIGHT / 2, lifts);
+	mainLift->isMoving = true;
 
 	kolejka.push_back(0);
 	kolejka.push_back(1);
@@ -265,30 +266,28 @@ int main(int argc, char **argv) {
 	SDL_Rect *textRect = new SDL_Rect;
 	textRect->x = 4;
 	textRect->y = 4;
-	textRect->w = SCREEN_WIDTH-8;
+	textRect->w = SCREEN_WIDTH - 8;
 	textRect->h = 36;
 
 	tick1 = SDL_GetTicks();
 	quit = 0;
-
+	float time = 0;
+	mainLift->y = 470;
 	while (!quit)
 	{
 		tick2 = SDL_GetTicks();
 		delta = (tick2 - tick1) * 0.001;
 		tick1 = tick2;
-
-
-
 		SDL_FillRect(screen, srcrect, white); //Obszar za winda do zamalowanie na bialo
 
 		mainLift->Draw(screen);
-		mainLift->goTo(kolejka.front(), delta);	//funkcja gdzie ma jechac winda - TYLKO DO TESTOW TAK NIE BEDZIE TO WYGLADAC		
+		mainLift->goTo(floorClick, delta);	//funkcja gdzie ma jechac winda - TYLKO DO TESTOW TAK NIE BEDZIE TO WYGLADAC
 
 		SDL_FillRect(screen, textRect, black);		//czarn y prostokąt i napisy -> POZNIEJ ZMIENIC
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);		//na teksture scrtex rysujemy ekran
-		//SDL_RenderClear(renderer);
+																			//SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, scrtex, NULL, NULL);
 		SDL_RenderPresent(renderer);
 
@@ -324,7 +323,9 @@ int main(int argc, char **argv) {
 				{
 					if (buttons[i]->checkMouse(event.button.x, event.button.y))		//sprawdzenie przyciskania dla kazdego przycisku
 					{
-						sprintf_s(text, "nacisnieto przycisk o ID : %d", i);
+						
+						sprintf_s(text, "nacisnieto przycisk o ID : %d", floorClick);
+
 						break;
 					}
 				}
