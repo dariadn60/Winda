@@ -9,7 +9,6 @@
 #include"./sdl-2.0.7/include/SDL.h"
 #include"./sdl-2.0.7/include/SDL_main.h"
 
-
 #define SCREEN_WIDTH	1280
 #define SCREEN_HEIGHT	720
 
@@ -55,7 +54,6 @@ public:
 	int x, y, width, height;
 	SDL_Surface *screen;
 	SDL_Surface *btn;
-
 	Button(SDL_Surface *_screen, SDL_Surface *_btn, int _x, int _y)
 	{
 		x = _x;
@@ -66,12 +64,10 @@ public:
 		width = btn->w;
 		height = btn->h;
 	}
-
 	void Draw()
 	{
 		DrawSurface(screen, btn, x + width / 2, y + height / 2);
 	}
-
 	bool checkMouse(int mouseX, int mouseY)
 	{
 		if (mouseX > x && mouseX < x + width && mouseY >y && mouseY < y + height)
@@ -80,7 +76,6 @@ public:
 			return false;
 	}
 };
-
 
 class lift
 {
@@ -96,7 +91,6 @@ public:
 	{
 		DrawSurface(screen, lifts, SCREEN_WIDTH / 2, y - lifts->h / 2);
 	}
-
 	void goTo(float pxY, double dt)
 	{
 		pxY = SCREEN_HEIGHT - 120 * pxY;
@@ -113,8 +107,44 @@ public:
 			y += 150 * dt *dir;
 		}
 	}
+	void stay(double dt)
+	{
+		y = y;
+	}
+	bool checkIfLevel(int i)
+	{
+		if (y < SCREEN_HEIGHT - 120 * i + 2 && y > SCREEN_HEIGHT - 120 * i - 2) // margines błędu zatrzymania windy -/+2
+			return true;
+		return false;
+	}
+	bool free(int liczbaLudzi)
+	{
+		if (liczbaLudzi < 7)
+			return true;
+		else
+			return false;
+	}
 };
-
+class Person {
+public:
+	float y, x;	// pozycja w xy;
+	int destinaton;
+	int currentLevel;
+	bool inLift = false;
+	SDL_Surface *person;
+	Person(int _x, int _y, SDL_Surface *_p, int _currentLevel, int _destinaton)
+	{
+		x = _x;
+		y = _y;
+		currentLevel = _currentLevel;
+		destinaton = _destinaton;
+		person = _p;
+	}
+	void Draw(SDL_Surface *screen)
+	{
+		DrawSurface(screen, person, x, y);
+	}
+};
 int numClicked = 0;  //który przycisk zostal nacisniety
 
 
@@ -126,6 +156,7 @@ int main(int argc, char **argv) {
 
 	SDL_Surface *lifts;
 	SDL_Surface *btn1s, *btn2s, *btn3s, *btn4s, *btn5s;
+	SDL_Surface *img_person;
 
 	SDL_Texture *scrtex;
 	SDL_Window *window;
@@ -164,41 +195,36 @@ int main(int argc, char **argv) {
 	btn3s = SDL_LoadBMP("./graphics/btn3.bmp");
 	btn4s = SDL_LoadBMP("./graphics/btn4.bmp");
 	btn5s = SDL_LoadBMP("./graphics/btn5.bmp");
+	img_person = SDL_LoadBMP("./graphics/on.bmp");
 
-	int black = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-	int white = SDL_MapRGB(screen->format, 255, 255, 255);
-
+	Uint32 black = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
+	Uint32 white = SDL_MapRGB(screen->format, 255, 255, 255);
 
 	//1 pietro przyciski
-
 	Button *btn1 = new Button(screen, btn2s, 350, SCREEN_HEIGHT - 100);
 	Button *btn2 = new Button(screen, btn3s, 400, SCREEN_HEIGHT - 100);
 	Button *btn3 = new Button(screen, btn4s, 450, SCREEN_HEIGHT - 100);
 	Button *btn4 = new Button(screen, btn5s, 500, SCREEN_HEIGHT - 100);
 
 	//2 pietro przyciski
-
 	Button *btn5 = new Button(screen, btn1s, 300, SCREEN_HEIGHT - 220);
 	Button *btn6 = new Button(screen, btn3s, 400, SCREEN_HEIGHT - 220);
 	Button *btn7 = new Button(screen, btn4s, 450, SCREEN_HEIGHT - 220);
 	Button *btn8 = new Button(screen, btn5s, 500, SCREEN_HEIGHT - 220);
 
 	//3 pietro przyciski
-
 	Button *btn9 = new Button(screen, btn1s, 300, SCREEN_HEIGHT - 340);
 	Button *btn10 = new Button(screen, btn2s, 350, SCREEN_HEIGHT - 340);
 	Button *btn11 = new Button(screen, btn4s, 450, SCREEN_HEIGHT - 340);
 	Button *btn12 = new Button(screen, btn5s, 500, SCREEN_HEIGHT - 340);
 
 	//4 pietro przyciski
-
 	Button *btn13 = new Button(screen, btn1s, 300, SCREEN_HEIGHT - 470);
 	Button *btn14 = new Button(screen, btn2s, 350, SCREEN_HEIGHT - 470);
 	Button *btn15 = new Button(screen, btn3s, 400, SCREEN_HEIGHT - 470);
 	Button *btn16 = new Button(screen, btn5s, 500, SCREEN_HEIGHT - 470);
 
 	//5 pietro przyciski
-
 	Button *btn17 = new Button(screen, btn1s, 300, SCREEN_HEIGHT - 600);
 	Button *btn18 = new Button(screen, btn2s, 350, SCREEN_HEIGHT - 600);
 	Button *btn19 = new Button(screen, btn3s, 400, SCREEN_HEIGHT - 600);
@@ -227,19 +253,21 @@ int main(int argc, char **argv) {
 	buttons.push_back(btn19);
 	buttons.push_back(btn20);
 
+	std::deque <Person> people;
+	std::deque <Person> peopleInLift;
 	std::deque <int> kolejka;		//kolejkowanie pieter - na razie nic nie robi
-
-	lift *mainLift = new lift(SCREEN_HEIGHT / 2, lifts);
-
-	kolejka.push_back(0);
 	kolejka.push_back(1);
+	kolejka.push_back(4);
+	kolejka.push_back(2);
+	kolejka.push_back(4);
+
+	lift *mainLift = new lift(SCREEN_HEIGHT, lifts);
 
 	SDL_FillRect(screen, NULL, white); // białe tło
 	for (int i = 0; i < 20; i++)		//Rysujemy przyciski przed whilem, zeby nie rysowal co klatka nieruchomych przyciskow
 	{
 		buttons[i]->Draw();
 	}
-
 
 	SDL_Rect *floorLine = new SDL_Rect;
 	floorLine->x = 0;
@@ -264,7 +292,7 @@ int main(int argc, char **argv) {
 	SDL_Rect *textRect = new SDL_Rect;
 	textRect->x = 4;
 	textRect->y = 4;
-	textRect->w = SCREEN_WIDTH-8;
+	textRect->w = SCREEN_WIDTH - 8;
 	textRect->h = 36;
 
 	tick1 = SDL_GetTicks();
@@ -276,18 +304,48 @@ int main(int argc, char **argv) {
 		delta = (tick2 - tick1) * 0.001;
 		tick1 = tick2;
 
-
-
 		SDL_FillRect(screen, srcrect, white); //Obszar za winda do zamalowanie na bialo
 
-		mainLift->Draw(screen);
-		mainLift->goTo(kolejka.front(), delta);	//funkcja gdzie ma jechac winda - TYLKO DO TESTOW TAK NIE BEDZIE TO WYGLADAC		
+											  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+											  //To będzie w funkcji
+		if (mainLift->checkIfLevel(kolejka.front()) == true) //winda znajduje się na piętrze
+		{
+			bool a, b;
+			int current = kolejka.front();
 
-		SDL_FillRect(screen, textRect, black);		//czarn y prostokąt i napisy -> POZNIEJ ZMIENIC
+			a = false; b = false;
+
+			mainLift->Draw(screen);
+
+			kolejka.pop_front();
+
+			if (kolejka.size() == 0)// jeśli winda nie ma żadnych polecej do wykonania
+			{
+				if (!people.empty())
+				{
+					kolejka.push_back(people.begin()->currentLevel);
+					kolejka.push_back(people.begin()->destinaton);
+
+					people.pop_front();
+				}
+				else
+					kolejka.push_back(current);
+			}
+		}
+		else //winda porusza się między piętrami
+		{
+			mainLift->Draw(screen);
+			mainLift->goTo(kolejka.front(), delta);
+		}
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		SDL_FillRect(screen, textRect, black);		//czarny prostokąt i napisy -> POZNIEJ ZMIENIC
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);		//na teksture scrtex rysujemy ekran
-		//SDL_RenderClear(renderer);
+		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, scrtex, NULL, NULL);
 		SDL_RenderPresent(renderer);
 
@@ -300,18 +358,6 @@ int main(int argc, char **argv) {
 			case SDL_KEYDOWN:
 				if (event.key.keysym.sym == SDLK_ESCAPE)
 					quit = 1;
-
-				else if (event.key.keysym.sym == SDLK_UP)
-				{
-
-				}
-				else if (event.key.keysym.sym == SDLK_DOWN)
-				{
-
-				}
-				break;
-			case SDL_KEYUP:
-				break;
 			case SDL_QUIT:
 				quit = 1;
 				break;
@@ -323,7 +369,24 @@ int main(int argc, char **argv) {
 				{
 					if (buttons[i]->checkMouse(event.button.x, event.button.y))		//sprawdzenie przyciskania dla kazdego przycisku
 					{
-						sprintf_s(text, "nacisnieto przycisk o ID : %d", i);
+						int level = i / 4;
+						int levelToGo;
+
+						if (i == 4 || i == 8 || i == 12 || i == 16)
+							levelToGo = 0;
+						else if (i == 0 || i == 9 || i == 13 || i == 17)
+							levelToGo = 1;
+						else if (i == 1 || i == 5 || i == 14 || i == 18)
+							levelToGo = 2;
+						else if (i == 2 || i == 6 || i == 10 || i == 19)
+							levelToGo = 3;
+						else
+							levelToGo = 4;
+
+						sprintf(text, "nacisnieto przycisk o ID : %d", i);
+
+						Person *testperson = new Person(60, SCREEN_HEIGHT - level * 120 - img_person->h + 1, img_person, level, levelToGo);
+						people.push_back(*testperson);
 						break;
 					}
 				}
