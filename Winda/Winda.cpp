@@ -233,7 +233,6 @@ int main(int argc, char **argv) {
 
 	kolejka.push_back(0);
 	kolejka.push_back(1);
-	kolejka.push_back(2);
 
 	SDL_FillRect(screen, NULL, white); // białe tło
 	for (int i = 0; i < 20; i++)		//Rysujemy przyciski przed whilem, zeby nie rysowal co klatka nieruchomych przyciskow
